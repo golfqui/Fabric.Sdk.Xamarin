@@ -152,7 +152,9 @@ namespace CrashlyticsKit
     }
 
     public static class Initializer
-    {        
+    {
+        public static Action<Exception> UnobservedTaskExceptionAction;
+
         private static readonly object InitializeLock = new object();
         private static Thread.IUncaughtExceptionHandler _defaultExceptionHandler;
         private static Thread.IUncaughtExceptionHandler _uncaughtExceptionHandler;
@@ -205,7 +207,17 @@ namespace CrashlyticsKit
 
             AndroidEnvironment.UnhandledExceptionRaiser += (s, a) => UncaughtException(a.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, a) => UncaughtException(a.ExceptionObject);
-            TaskScheduler.UnobservedTaskException += (s, a) => UncaughtException(a.Exception);
+            TaskScheduler.UnobservedTaskException += (s, a) =>
+            {
+                if (UnobservedTaskExceptionAction != null)
+                {
+                    UnobservedTaskExceptionAction(a.Exception);
+                }
+                else
+                {
+                    UncaughtException(a.Exception);
+                }
+            };
         }
     }
 
